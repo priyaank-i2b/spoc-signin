@@ -10,13 +10,14 @@
 :root{--bg:#faf8f5;--card:#fff;--ink:#1d1d1b;--muted:#5f5e5a;--line:#ece7df;--accent:#ff8500;--accent-ink:#b35900;--on-accent:#1d1d1b;--code:#fff4e8}
 @media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1d1d1b;--ink:#f4f2ee;--muted:#a8a59e;--line:#2e2d2a;--accent:#ff8500;--accent-ink:#ff8500;--on-accent:#1d1d1b;--code:#2a2117}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:0 16px}
-.card{max-width:520px;margin:32px auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 20px}
+.card{max-width:520px;margin:12vh auto 32px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 20px}
 h1{font-size:20px;margin:0 0 8px}p{margin:8px 0;color:var(--muted)}
 .code{font:13px/1.45 ui-monospace,Menlo,monospace;background:var(--code);border-radius:8px;padding:10px 12px;word-break:break-all;margin:14px 0;user-select:all}
 .btns{display:flex;gap:10px;flex-wrap:wrap}
 a.btn,button{flex:1 1 180px;text-align:center;font:inherit;font-weight:600;padding:12px 14px;border-radius:10px;border:1px solid var(--accent);cursor:pointer;text-decoration:none}
 .primary{background:var(--accent);color:var(--on-accent)}.secondary{background:transparent;color:var(--accent-ink);border-color:var(--accent-ink)}
-.err{color:#d93025}
+.err{color:#c5221f}
+@media (prefers-color-scheme:dark){.err{color:#ff7b6e}}
 .logo{display:block;margin:0 0 18px}.on-dark{display:none}
 @media (prefers-color-scheme:dark){.on-light{display:none}.on-dark{display:block}}
 .code{border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}.small{font-size:13px}
@@ -48,9 +49,19 @@ a.btn,button{flex:1 1 180px;text-align:center;font:inherit;font-weight:600;paddi
   var code = q.get("code"), state = q.get("state"), error = q.get("error");
   history.replaceState(null, "", location.pathname);
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
-  if (error || !code || !state) {
-    card.innerHTML = '<h1>Sign-in didn\'t finish</h1><p class="err">' + esc(error || "No code was returned.") +
-      '</p><p>Go back to SPOC Assistant in Telegram and ask it to connect your Google account again.</p>';
+  var bot = '<div class="btns"><a class="btn primary" href="https://t.me/spoc_pa_bot">Open SPOC Assistant</a></div>';
+  if (!error && !code) {
+    // Opened directly, not after a Google sign-in.
+    card.innerHTML = '<h1>Connect Google to SPOC Assistant</h1><p>This page finishes connecting your Google account. ' +
+      'Start from SPOC Assistant in Telegram: ask it to connect your Google account and tap the sign-in button.</p>' + bot;
+    return;
+  }
+  if (error || !state) {
+    var why = error === "access_denied" ? "You cancelled the sign-in, so nothing was connected."
+      : error === "admin_policy_enforced" ? "Your Google Workspace admin has blocked this app."
+      : "Google didn't finish the sign-in (" + esc(error || "missing details") + ").";
+    card.innerHTML = '<h1>Sign-in didn\'t finish</h1><p class="err">' + why +
+      '</p><p>Ask SPOC Assistant to connect your Google account again whenever you\'re ready.</p>' + bot;
     return;
   }
   var payload = "G1." + state + "." + code;
