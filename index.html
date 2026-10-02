@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<title>SPOC Assistant sign-in</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1d2430;--muted:#667085;--line:#e3e7ee;--accent:#1f6feb;--code:#f1f3f6}
+@media (prefers-color-scheme:dark){:root{--bg:#111418;--card:#1a1e24;--ink:#e6e9ee;--muted:#9aa4b2;--line:#2a3039;--accent:#4c8dff;--code:#232830}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:0 16px}
+.card{max-width:520px;margin:32px auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 20px}
+h1{font-size:20px;margin:0 0 8px}p{margin:8px 0;color:var(--muted)}
+.code{font:13px/1.45 ui-monospace,Menlo,monospace;background:var(--code);border-radius:8px;padding:10px 12px;word-break:break-all;margin:14px 0;user-select:all}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+a.btn,button{flex:1 1 180px;text-align:center;font:inherit;font-weight:600;padding:12px 14px;border-radius:10px;border:1px solid var(--accent);cursor:pointer;text-decoration:none}
+.primary{background:var(--accent);color:#fff}.secondary{background:transparent;color:var(--accent)}
+.err{color:#d93025}.small{font-size:13px}
+</style>
+</head>
+<body>
+<div class="card" id="card"><h1>SPOC Assistant</h1><p>Loading…</p></div>
+<script>
+// Google sends people here after they approve SPOC Assistant. This page only
+// shows the one-time code so they can paste it into the bot's chat; it sends
+// nothing anywhere. The code is useless without the bot's own secret.
+(function () {
+  var q = new URLSearchParams(location.search);
+  var card = document.getElementById("card");
+  var code = q.get("code"), state = q.get("state"), error = q.get("error");
+  history.replaceState(null, "", location.pathname);
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
+  if (error || !code || !state) {
+    card.innerHTML = '<h1>Sign-in didn\'t finish</h1><p class="err">' + esc(error || "No code was returned.") +
+      '</p><p>Go back to SPOC Assistant in Telegram and ask it to connect your Google account again.</p>';
+    return;
+  }
+  var payload = "G1." + state + "." + code;
+  card.innerHTML = '<h1>Almost done</h1><p>Send this code to SPOC Assistant in Telegram to finish connecting your Google account.</p>' +
+    '<div class="code" id="code">' + esc(payload) + '</div>' +
+    '<div class="btns"><a class="btn primary" id="open" href="https://t.me/spoc_pa_bot?text=' + encodeURIComponent(payload) + '">Open Telegram with the code</a>' +
+    '<button class="secondary" id="copy">Copy code</button></div>' +
+    '<p class="small">If Telegram opens without the code filled in, copy it here and paste it into the chat. It works once and expires in 15 minutes.</p>';
+  document.getElementById("copy").onclick = function () {
+    var b = this;
+    (navigator.clipboard ? navigator.clipboard.writeText(payload) : Promise.reject()).then(
+      function () { b.textContent = "Copied ✓"; },
+      function () { var r = document.createRange(); r.selectNodeContents(document.getElementById("code")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected — copy it"; });
+  };
+})();
+</script>
+</body>
+</html>
